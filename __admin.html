@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel — Empleados Apollo</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --red:#D92B2B; --red-hover:#BE2020; --red-light:#FFF3F3; --red-mid:#FFD5D5;
+  --orange:#D97706; --orange-bg:#FFFBEB;
+  --green:#047857; --green-bg:#ECFDF5;
+  --blue:#1F3864; --blue-bg:#EFF6FF; --blue-light:#DBEAFE;
+  --bg:#F0F2F5; --white:#FFFFFF; --border:#E0E2EB;
+  --text:#0F0F1A; --mid:#4A4A6A; --muted:#9090B0;
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.06),0 4px 12px rgba(0,0,0,0.05);
+  --shadow-md:0 4px 8px rgba(0,0,0,0.04),0 16px 40px rgba(0,0,0,0.09);
+}
+
+body { font-family:'Plus Jakarta Sans',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+
+/* ── GATE ── */
+#gate-screen {
+  position:fixed; inset:0; background:linear-gradient(135deg,var(--blue),#2E4A8C);
+  display:flex; align-items:center; justify-content:center; z-index:1000;
+}
+.gate-card {
+  background:var(--white); border-radius:20px; padding:40px 36px;
+  width:100%; max-width:380px; text-align:center; box-shadow:var(--shadow-md);
+}
+.gate-logo { font-size:48px; margin-bottom:12px; }
+.gate-card h2 { font-size:22px; font-weight:800; color:var(--blue); margin-bottom:6px; }
+.gate-card p  { font-size:13px; color:var(--muted); margin-bottom:24px; }
+.gate-input-wrap { position:relative; margin-bottom:12px; }
+.gate-input-wrap input {
+  width:100%; padding:14px 48px 14px 16px;
+  border:1.5px solid var(--border); border-radius:10px;
+  font-family:inherit; font-size:14px; outline:none; transition:border-color .2s;
+}
+.gate-input-wrap input:focus { border-color:var(--blue); }
+.gate-toggle { position:absolute; right:14px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; font-size:16px; color:var(--muted); }
+.gate-btn { width:100%; padding:14px; background:linear-gradient(135deg,var(--blue),#2E4A8C); color:white; border:none; border-radius:10px; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer; transition:opacity .2s; }
+.gate-btn:hover { opacity:.9; }
+.gate-error { color:var(--red); font-size:12px; font-weight:600; margin-top:8px; min-height:16px; }
+
+/* ── TOPBAR ── */
+#admin-content { display:none; }
+.topbar {
+  background:var(--white); border-bottom:1px solid var(--border);
+  padding:14px 24px; display:flex; align-items:center; gap:16px;
+  position:sticky; top:0; z-index:100;
+}
+.logo { font-size:18px; font-weight:800; color:var(--blue); }
+.logo span { color:var(--red); }
+.emp-count-badge {
+  background:var(--blue-bg); color:var(--blue); font-size:11px; font-weight:700;
+  padding:4px 10px; border-radius:20px; border:1px solid var(--blue-light);
+}
+.topbar-right { margin-left:auto; display:flex; gap:8px; align-items:center; }
+.btn-sm {
+  padding:8px 14px; border:none; border-radius:8px;
+  font-family:inherit; font-size:12px; font-weight:700; cursor:pointer;
+  display:flex; align-items:center; gap:5px; transition:opacity .2s;
+}
+.btn-sm:hover { opacity:.85; }
+.btn-add    { background:var(--blue); color:white; }
+.btn-logout { background:var(--bg); color:var(--mid); border:1px solid var(--border); }
+
+/* ── MAIN ── */
+.main { padding:24px; max-width:1200px; margin:0 auto; }
+
+/* Search bar */
+.search-bar {
+  background:var(--white); border-radius:12px; padding:14px 18px;
+  display:flex; align-items:center; gap:10px; margin-bottom:20px;
+  box-shadow:var(--shadow-sm); border:1.5px solid var(--border);
+}
+.search-bar input {
+  border:none; background:none; font-family:inherit; font-size:14px;
+  outline:none; flex:1; color:var(--text);
+}
+.search-bar span { color:var(--muted); font-size:16px; }
+
+/* Table */
+.table-section { background:var(--white); border-radius:14px; box-shadow:var(--shadow-sm); overflow:hidden; }
+.table-header { padding:16px 20px; border-bottom:1px solid var(--border); font-size:12px; font-weight:700; color:var(--muted); }
+.table-wrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+th {
+  background:var(--bg); padding:11px 14px; text-align:left;
+  font-size:10px; font-weight:700; text-transform:uppercase;
+  letter-spacing:.5px; color:var(--muted); border-bottom:1px solid var(--border);
+  white-space:nowrap;
+}
+td { padding:12px 14px; border-bottom:1px solid var(--border); vertical-align:middle; }
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:#FAFAFA; }
+.row-num { font-size:11px; font-weight:700; color:var(--muted); }
+.dept-chip { background:var(--blue-bg); color:var(--blue); font-size:11px; font-weight:700; padding:3px 8px; border-radius:6px; }
+.brigade-chip { background:#F3E8FF; color:#7C3AED; font-size:11px; font-weight:700; padding:3px 8px; border-radius:6px; }
+
+.action-btns { display:flex; gap:6px; }
+.btn-edit { background:var(--blue-bg); color:var(--blue); border:1px solid var(--blue-light); padding:5px 10px; border-radius:6px; font-family:inherit; font-size:11px; font-weight:700; cursor:pointer; }
+.btn-edit:hover { background:var(--blue); color:white; }
+.btn-del  { background:var(--red-light); color:var(--red); border:1px solid var(--red-mid); padding:5px 10px; border-radius:6px; font-family:inherit; font-size:11px; font-weight:700; cursor:pointer; }
+.btn-del:hover  { background:var(--red); color:white; }
+
+/* ── MODAL ── */
+.overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:200; align-items:center; justify-content:center; padding:16px; }
+.overlay.open { display:flex; }
+.modal {
+  background:var(--white); border-radius:20px; padding:32px;
+  width:100%; max-width:500px; max-height:90vh; overflow-y:auto;
+}
+.modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; }
+.modal-header h3 { font-size:20px; font-weight:800; color:var(--blue); }
+.modal-close { background:var(--bg); border:none; width:32px; height:32px; border-radius:8px; cursor:pointer; font-size:16px; }
+
+.form-group { margin-bottom:16px; }
+.form-group label { display:block; font-size:11px; font-weight:700; color:var(--mid); text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; }
+.form-group input, .form-group select {
+  width:100%; padding:12px 14px; border:1.5px solid var(--border); border-radius:10px;
+  font-family:inherit; font-size:14px; color:var(--text); outline:none; transition:border-color .2s;
+}
+.form-group input:focus, .form-group select:focus { border-color:var(--blue); box-shadow:0 0 0 3px rgba(31,56,100,0.08); }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+.modal-footer { display:flex; gap:10px; margin-top:24px; }
+.modal-footer button { flex:1; padding:13px; border:none; border-radius:10px; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer; transition:opacity .2s; }
+.modal-footer button:hover { opacity:.85; }
+.btn-cancel  { background:var(--bg); color:var(--mid); }
+.btn-save    { background:linear-gradient(135deg,var(--blue),#2E4A8C); color:white; }
+.btn-confirm-del { background:var(--red); color:white; }
+
+/* Delete confirm modal */
+.del-modal { max-width:360px; text-align:center; }
+.del-modal .del-icon { font-size:48px; margin-bottom:12px; }
+.del-modal h3 { font-size:20px; font-weight:800; margin-bottom:8px; }
+.del-modal p  { font-size:13px; color:var(--mid); margin-bottom:24px; }
+
+/* Toast */
+.toast {
+  position:fixed; bottom:24px; right:24px; z-index:500;
+  background:var(--text); color:white; padding:12px 20px;
+  border-radius:10px; font-size:13px; font-weight:600;
+  transform:translateY(80px); opacity:0; transition:all .3s;
+  display:flex; align-items:center; gap:8px;
+}
+.toast.show { transform:translateY(0); opacity:1; }
+.toast.success { background:var(--green); }
+.toast.error   { background:var(--red); }
+
+/* Empty state */
+#empty-state { text-align:center; padding:60px 20px; }
+#empty-state .empty-icon { font-size:48px; margin-bottom:12px; }
+#empty-state p { color:var(--muted); font-size:14px; }
+
+.loading { text-align:center; padding:40px; color:var(--muted); font-size:14px; }
+</style>
+</head>
+<body>
+
+<!-- GATE -->
+<div id="gate-screen">
+  <div class="gate-card">
+    <div class="gate-logo">👥</div>
+    <h2>Panel de Administración</h2>
+    <p>Gestión de base de datos de empleados</p>
+    <div class="gate-input-wrap">
+      <input type="password" id="gate-input" placeholder="Contraseña de acceso" onkeydown="if(event.key==='Enter')checkGate()">
+      <button class="gate-toggle" onclick="togglePwd()">👁</button>
+    </div>
+    <button class="gate-btn" onclick="checkGate()">Ingresar</button>
+    <div class="gate-error" id="gate-error"></div>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="admin-content">
+  <div class="topbar">
+    <div class="logo">Apollo <span>Admin</span></div>
+    <div class="emp-count-badge">👥 <span id="emp-count">0</span> empleados</div>
+    <div class="topbar-right">
+      <button class="btn-sm btn-add" onclick="openAddModal()">➕ Nuevo Empleado</button>
+      <button class="btn-sm btn-logout" onclick="logout()">🔒 Salir</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="search-bar">
+      <span>🔍</span>
+      <input type="text" id="search" placeholder="Buscar por nombre, email, manager o departamento..." oninput="renderTable()">
+    </div>
+
+    <div class="table-section">
+      <div class="table-header" id="table-header">Cargando empleados...</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Nombre Completo</th>
+              <th>Email Corporativo</th>
+              <th>Manager</th>
+              <th>Departamento</th>
+              <th>Teléfono</th>
+              <th>Agente Brigada</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+        <div id="empty-state" style="display:none">
+          <div class="empty-icon">👥</div>
+          <p>No hay empleados registrados aún. Agrega el primero.</p>
+        </div>
+        <div id="loading-state" class="loading">⏳ Cargando...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD / EDIT MODAL -->
+<div class="overlay" id="form-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">Nuevo Empleado</h3>
+      <button class="modal-close" onclick="closeFormModal()">✕</button>
+    </div>
+
+    <div class="form-group">
+      <label>Email Corporativo *</label>
+      <input type="email" id="f-email" placeholder="maria.gonzalez@apollo.io">
+    </div>
+    <div class="form-group">
+      <label>Nombre Completo *</label>
+      <input type="text" id="f-nombre" placeholder="María González López">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Nombre del Manager *</label>
+        <input type="text" id="f-manager" placeholder="Carlos Ramírez">
+      </div>
+      <div class="form-group">
+        <label>Departamento *</label>
+        <select id="f-dept">
+          <option value="">— Selecciona —</option>
+          <option value="HVO">HVO</option>
+          <option value="Support">Support</option>
+          <option value="CA">CA</option>
+          <option value="Sales">Sales</option>
+          <option value="HR">HR</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Teléfono</label>
+        <input type="text" id="f-telefono" placeholder="+52 55 1234 5678">
+      </div>
+      <div class="form-group">
+        <label>Agente de Brigada</label>
+        <input type="text" id="f-brigada" placeholder="Nombre del agente">
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeFormModal()">Cancelar</button>
+      <button class="btn-save" onclick="saveEmployee()">💾 Guardar Empleado</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE CONFIRM MODAL -->
+<div class="overlay" id="del-overlay">
+  <div class="modal del-modal">
+    <div class="del-icon">🗑️</div>
+    <h3>Eliminar Empleado</h3>
+    <p id="del-msg">¿Estás seguro? Esta acción no se puede deshacer.</p>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeDelModal()">Cancelar</button>
+      <button class="btn-confirm-del" onclick="confirmDelete()">Sí, Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- Gate Script -->
+<script>
+  const SESSION_KEY = 'apollo_admin_v2';
+  const PASSWORD    = 'Brigada2026';
+
+  function checkSession() {
+    if (sessionStorage.getItem(SESSION_KEY) === '1') showAdmin();
+  }
+
+  function checkGate() {
+    if (document.getElementById('gate-input').value === PASSWORD) {
+      sessionStorage.setItem(SESSION_KEY, '1');
+      showAdmin();
+    } else {
+      document.getElementById('gate-error').textContent = '❌ Contraseña incorrecta.';
+    }
+  }
+
+  function showAdmin() {
+    document.getElementById('gate-screen').style.display = 'none';
+    document.getElementById('admin-content').style.display = 'block';
+  }
+
+  function togglePwd() {
+    const i = document.getElementById('gate-input');
+    i.type = i.type === 'password' ? 'text' : 'password';
+  }
+
+  window.logout = function() {
+    sessionStorage.removeItem(SESSION_KEY);
+    document.getElementById('admin-content').style.display = 'none';
+    document.getElementById('gate-screen').style.display = 'flex';
+    document.getElementById('gate-input').value = '';
+  };
+
+  checkSession();
+</script>
+
+<!-- Firebase Script -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getDatabase, ref, onValue, push, update, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAuFJobbtBEtYEPwLEUlCj_nHnAl2gYnW8",
+    authDomain: "apollo-emergency-response.firebaseapp.com",
+    databaseURL: "https://apollo-emergency-response-default-rtdb.firebaseio.com",
+    projectId: "apollo-emergency-response",
+    storageBucket: "apollo-emergency-response.firebasestorage.app",
+    messagingSenderId: "48858300068",
+    appId: "1:48858300068:web:596bb8a998501d5917b031"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getDatabase(app);
+
+  let allEmployees = [];
+  let editingId    = null;
+  let deletingId   = null;
+
+  // Live listener
+  onValue(ref(db, 'empleados'), snap => {
+    allEmployees = [];
+    if (snap.exists()) {
+      snap.forEach(c => { allEmployees.push({ id: c.key, ...c.val() }); });
+      allEmployees.sort((a,b) => (a.nombre||'').localeCompare(b.nombre||''));
+    }
+    document.getElementById('emp-count').textContent = allEmployees.length;
+    document.getElementById('loading-state').style.display = 'none';
+    renderTable();
+  });
+
+  window.renderTable = function() {
+    const q = document.getElementById('search').value.toLowerCase();
+    const filtered = allEmployees.filter(e =>
+      !q ||
+      (e.nombre||'').toLowerCase().includes(q) ||
+      (e.email||'').toLowerCase().includes(q) ||
+      (e.manager||'').toLowerCase().includes(q) ||
+      (e.departamento||'').toLowerCase().includes(q)
+    );
+
+    const tbody  = document.getElementById('tbody');
+    const empty  = document.getElementById('empty-state');
+    const header = document.getElementById('table-header');
+    header.textContent = `${filtered.length} empleado${filtered.length !== 1 ? 's' : ''}`;
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+
+    empty.style.display = 'none';
+    tbody.innerHTML = filtered.map((e, i) => `
+      <tr>
+        <td><span class="row-num">${i+1}</span></td>
+        <td><strong>${e.nombre || '—'}</strong></td>
+        <td style="color:var(--mid);font-size:12px">${e.email || '—'}</td>
+        <td>${e.manager || '—'}</td>
+        <td><span class="dept-chip">${e.departamento || '—'}</span></td>
+        <td style="font-size:12px;color:var(--mid)">${e.telefono || '—'}</td>
+        <td><span class="brigade-chip">${e.agente_brigada || '—'}</span></td>
+        <td>
+          <div class="action-btns">
+            <button class="btn-edit" onclick="openEditModal('${e.id}')">✏️ Editar</button>
+            <button class="btn-del"  onclick="openDelModal('${e.id}','${(e.nombre||'').replace(/'/g,"\\'")}')">🗑️</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  };
+
+  // ── ADD / EDIT ──
+  window.openAddModal = function() {
+    editingId = null;
+    document.getElementById('modal-title').textContent = '➕ Nuevo Empleado';
+    clearForm();
+    document.getElementById('form-overlay').classList.add('open');
+  };
+
+  window.openEditModal = function(id) {
+    const emp = allEmployees.find(e => e.id === id);
+    if (!emp) return;
+    editingId = id;
+    document.getElementById('modal-title').textContent = '✏️ Editar Empleado';
+    document.getElementById('f-email').value    = emp.email    || '';
+    document.getElementById('f-nombre').value   = emp.nombre   || '';
+    document.getElementById('f-manager').value  = emp.manager  || '';
+    document.getElementById('f-dept').value     = emp.departamento || '';
+    document.getElementById('f-telefono').value = emp.telefono || '';
+    document.getElementById('f-brigada').value  = emp.agente_brigada || '';
+    document.getElementById('form-overlay').classList.add('open');
+  };
+
+  window.closeFormModal = function() {
+    document.getElementById('form-overlay').classList.remove('open');
+    editingId = null;
+  };
+
+  function clearForm() {
+    ['f-email','f-nombre','f-manager','f-telefono','f-brigada'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('f-dept').value = '';
+  }
+
+  window.saveEmployee = async function() {
+    const email   = document.getElementById('f-email').value.trim();
+    const nombre  = document.getElementById('f-nombre').value.trim();
+    const manager = document.getElementById('f-manager').value.trim();
+    const dept    = document.getElementById('f-dept').value;
+
+    if (!email || !nombre || !manager || !dept) {
+      showToast('⚠️ Completa los campos obligatorios', 'error');
+      return;
+    }
+
+    const data = {
+      email,
+      nombre,
+      manager,
+      departamento:   dept,
+      telefono:       document.getElementById('f-telefono').value.trim(),
+      agente_brigada: document.getElementById('f-brigada').value.trim()
+    };
+
+    try {
+      if (editingId) {
+        await update(ref(db, `empleados/${editingId}`), data);
+        showToast('✅ Empleado actualizado correctamente', 'success');
+      } else {
+        await push(ref(db, 'empleados'), data);
+        showToast('✅ Empleado agregado correctamente', 'success');
+      }
+      closeFormModal();
+    } catch(err) {
+      showToast('❌ Error al guardar. Intenta de nuevo.', 'error');
+    }
+  };
+
+  // ── DELETE ──
+  window.openDelModal = function(id, nombre) {
+    deletingId = id;
+    document.getElementById('del-msg').textContent = `¿Eliminar a "${nombre}"? Esta acción no se puede deshacer.`;
+    document.getElementById('del-overlay').classList.add('open');
+  };
+
+  window.closeDelModal = function() {
+    document.getElementById('del-overlay').classList.remove('open');
+    deletingId = null;
+  };
+
+  window.confirmDelete = async function() {
+    if (!deletingId) return;
+    try {
+      await remove(ref(db, `empleados/${deletingId}`));
+      showToast('🗑️ Empleado eliminado', 'success');
+      closeDelModal();
+    } catch(err) {
+      showToast('❌ Error al eliminar.', 'error');
+    }
+  };
+
+  // ── TOAST ──
+  function showToast(msg, type = '') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `toast ${type} show`;
+    setTimeout(() => { t.className = `toast ${type}`; }, 3000);
+  }
+</script>
+</body>
+</html>
