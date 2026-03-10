@@ -290,15 +290,11 @@ tr:hover td { background:#FAFAFA; }
           <thead>
             <tr>
               <th>#</th>
-              <th>Nombre</th>
-              <th>Email</th>
-              <th>Manager</th>
-              <th>Dpto</th>
-              <th>Ubicación / Notas</th>
-              <th>Teléfono</th>
+              <th>Email Corporativo</th>
+              <th>Nombre del Manager</th>
+              <th>Notas Adicionales</th>
               <th>Estado</th>
-              <th>🧡 Agente Brigada</th>
-              <th>Hora</th>
+              <th>Agente Brigada</th>
             </tr>
           </thead>
           <tbody id="tbody"></tbody>
@@ -463,21 +459,20 @@ tr:hover td { background:#FAFAFA; }
 
       return `<tr>
         <td><span class="row-num">${i+1}</span></td>
-        <td><strong>${r.nombre || '—'}</strong></td>
-        <td><span class="note-cell">${r.email || '—'}</span></td>
+        <td><strong>${r.email || '—'}</strong></td>
         <td>${r.manager || '—'}</td>
-        <td><span class="dept-chip">${r.departamento || '—'}</span></td>
         <td><span class="note-cell">${r.notes || '—'}</span></td>
-        <td><span class="time-cell">${r.telefono || '—'}</span></td>
         <td><span class="status-pill ${r.status}">${s.icon} ${s.label}</span></td>
         <td>
-          <div class="brigade-cell" id="brigade-cell-${r.id}">
-            ${brigadeDisplay}
-            <input class="brigade-input" id="brigade-input-${r.id}" placeholder="Nombre agente..." value="${brigade}">
-            <button class="brigade-save" id="brigade-save-${r.id}" onclick="saveBrigade('${r.id}')">✓ Guardar</button>
+          <div class="brigade-cell" id="brigade-cell-${r.id}" style="display:flex;gap:6px;align-items:center;">
+            <input class="brigade-input" id="brigade-input-${r.id}"
+              placeholder="Escribe nombre..."
+              value="${brigade}"
+              style="display:block;flex:1;"
+              onblur="saveBrigade('${r.id}')"
+              onkeydown="if(event.key==='Enter')saveBrigade('${r.id}')">
           </div>
         </td>
-        <td><span class="time-cell">${ts}</span></td>
       </tr>`;
     }).join('');
   };
@@ -499,8 +494,14 @@ tr:hover td { background:#FAFAFA; }
   window.saveBrigade = async function(reportId) {
     const input = document.getElementById(`brigade-input-${reportId}`);
     const value = input.value.trim();
+    if (!value) return;
+    const reporte = allReports.find(r => r.id === reportId);
     try {
       await update(ref(db, `reportes/${reportId}`), { agente_brigada: value });
+      if (reporte?.email) {
+        const emailKey = reporte.email.toLowerCase().replace(/\./g, '_').replace('@', '_at_');
+        await update(ref(db, `empleados/${emailKey}`), { agente_brigada: value });
+      }
     } catch(e) {
       alert('Error al guardar. Intenta de nuevo.');
     }
