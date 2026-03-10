@@ -340,13 +340,20 @@
       </div>
     </div>
 
-    <!-- Auto-filled info card -->
+    <!-- Nombre del Manager — always visible, auto-filled or manual -->
+    <div class="form-group">
+      <label>Nombre del Manager</label>
+      <input type="text" id="manager" placeholder="Ej. Carlos Ramírez" autocomplete="off">
+      <div class="autofill-info" id="manager-autofill-info">✅ Auto-completado desde base de datos</div>
+      <div class="error-msg" id="err-manager">⚠️ Por favor ingresa el nombre de tu manager.</div>
+    </div>
+
+    <!-- Auto-filled info card (extra info) -->
     <div class="autofill-fields" id="autofill-card">
       <div class="autofill-fields-title">✅ Información encontrada automáticamente</div>
       <div class="autofill-row"><span class="af-key">Nombre</span><span class="af-val" id="af-nombre">—</span></div>
-      <div class="autofill-row"><span class="af-key">Manager</span><span class="af-val" id="af-manager">—</span></div>
       <div class="autofill-row"><span class="af-key">Departamento</span><span class="af-val" id="af-dept">—</span></div>
-      <div class="autofill-row"><span class="af-key">Teléfono</span><span class="af-val" id="af-phone">—</span></div>
+
     </div>
 
     <!-- Nombre (shown only if not found in DB) -->
@@ -469,9 +476,12 @@
 
   function showAutofill(data) {
     document.getElementById('af-nombre').textContent  = data.nombre || '—';
-    document.getElementById('af-manager').textContent = data.manager || '—';
     document.getElementById('af-dept').textContent    = data.departamento || '—';
-    document.getElementById('af-phone').textContent   = data.telefono || '—';
+    // Auto-fill manager field
+    const managerInput = document.getElementById('manager');
+    managerInput.value = data.manager || '';
+    managerInput.classList.add('autofilled');
+    document.getElementById('manager-autofill-info').classList.add('show');
     document.getElementById('autofill-card').classList.add('show');
     document.getElementById('nombre-group').style.display = 'none';
   }
@@ -480,6 +490,10 @@
     empleadoData = null;
     document.getElementById('autofill-card').classList.remove('show');
     document.getElementById('lookup-status').className = 'lookup-status';
+    const managerInput = document.getElementById('manager');
+    managerInput.value = '';
+    managerInput.classList.remove('autofilled');
+    document.getElementById('manager-autofill-info').classList.remove('show');
   }
 
   function showLookupStatus(type, msg) {
@@ -522,7 +536,7 @@
       const payload = {
         email,
         nombre:       empleadoData?.nombre      || document.getElementById('nombre').value.trim(),
-        manager:      empleadoData?.manager      || '—',
+        manager:      document.getElementById('manager').value.trim() || empleadoData?.manager || '—',
         departamento: empleadoData?.departamento || '—',
         telefono:     empleadoData?.telefono     || '—',
         status,
