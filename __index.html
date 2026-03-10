@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reporte de Emergencia</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --red:        #D92B2B;
+    --red-hover:  #BE2020;
+    --red-light:  #FFF3F3;
+    --orange:     #D97706;
+    --orange-bg:  #FFFBEB;
+    --green:      #047857;
+    --green-bg:   #ECFDF5;
+    --bg:         #F0F2F5;
+    --white:      #FFFFFF;
+    --border:     #E0E2EB;
+    --text:       #0F0F1A;
+    --mid:        #4A4A6A;
+    --muted:      #9090B0;
+    --shadow-sm:  0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.05);
+    --shadow-md:  0 4px 8px rgba(0,0,0,0.04), 0 16px 40px rgba(0,0,0,0.09);
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+  }
+
+  .card {
+    background: var(--white);
+    border-radius: 20px;
+    box-shadow: var(--shadow-md);
+    width: 100%;
+    max-width: 480px;
+    overflow: hidden;
+  }
+
+  .card-header {
+    background: linear-gradient(135deg, var(--red), var(--red-hover));
+    padding: 28px 32px 24px;
+    text-align: center;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.2);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-bottom: 14px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .badge-dot {
+    width: 6px; height: 6px;
+    background: #fff;
+    border-radius: 50%;
+    animation: blink 1.4s infinite;
+  }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .card-header h1 {
+    color: white;
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 1.2;
+  }
+
+  .card-header h1 span { color: rgba(255,255,255,0.75); }
+
+  .card-header p {
+    color: rgba(255,255,255,0.8);
+    font-size: 13px;
+    margin-top: 6px;
+  }
+
+  .card-body { padding: 28px 32px; }
+
+  .form-group { margin-bottom: 20px; }
+
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--mid);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 7px;
+  }
+
+  input[type="text"], input[type="email"] {
+    width: 100%;
+    padding: 13px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--text);
+    background: var(--white);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
+
+  input[type="text"]:focus, input[type="email"]:focus {
+    border-color: var(--red);
+    box-shadow: 0 0 0 3px rgba(217,43,43,0.1);
+  }
+
+  input::placeholder { color: var(--muted); }
+
+  input.autofilled {
+    background: #F0FFF8;
+    border-color: var(--green);
+    color: var(--green);
+    font-weight: 600;
+  }
+
+  .autofill-info {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    font-size: 11px;
+    color: var(--green);
+    font-weight: 600;
+  }
+
+  .autofill-info.show { display: flex; }
+
+  .lookup-status {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .lookup-status.loading { display: flex; color: var(--orange); }
+  .lookup-status.found   { display: flex; color: var(--green); }
+  .lookup-status.notfound{ display: flex; color: var(--red); }
+
+  .autofill-fields {
+    background: #F0FFF8;
+    border: 1.5px solid #A7F3D0;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    display: none;
+  }
+
+  .autofill-fields.show { display: block; }
+
+  .autofill-fields-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--green);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .autofill-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+    border-bottom: 1px solid #D1FAE5;
+    font-size: 13px;
+  }
+
+  .autofill-row:last-child { border-bottom: none; }
+  .autofill-row .af-key { color: var(--mid); font-weight: 600; }
+  .autofill-row .af-val { color: var(--text); font-weight: 700; }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 4px 0 20px;
+  }
+
+  .status-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--mid);
+    text-align: center;
+    margin-bottom: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .status-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .status-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px 8px;
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: var(--white);
+    font-family: inherit;
+  }
+
+  .status-btn:hover { transform: translateY(-2px); }
+
+  .status-btn .icon { font-size: 28px; }
+
+  .status-btn .label {
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+    line-height: 1.3;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  .status-btn[data-value="safe"]      { border-color: var(--border); }
+  .status-btn[data-value="help"]      { border-color: var(--border); }
+  .status-btn[data-value="emergency"] { border-color: var(--border); }
+
+  .status-btn[data-value="safe"].active      { border-color: var(--green); background: var(--green-bg); }
+  .status-btn[data-value="help"].active      { border-color: var(--orange); background: var(--orange-bg); }
+  .status-btn[data-value="emergency"].active { border-color: var(--red); background: var(--red-light); }
+
+  .status-btn[data-value="safe"] .label      { color: var(--green); }
+  .status-btn[data-value="help"] .label      { color: var(--orange); }
+  .status-btn[data-value="emergency"] .label { color: var(--red); }
+
+  input[name="status"] { display: none; }
+
+  .error-msg {
+    display: none;
+    color: var(--orange);
+    font-size: 11px;
+    font-weight: 600;
+    margin-top: 5px;
+  }
+
+  .submit-btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--red), var(--red-hover));
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: opacity 0.2s, transform 0.15s;
+  }
+
+  .submit-btn:hover:not(:disabled) { opacity: 0.92; transform: translateY(-1px); }
+  .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .success-screen {
+    display: none;
+    text-align: center;
+    padding: 40px 32px;
+  }
+
+  .success-icon-wrap {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 40px;
+    margin: 0 auto 20px;
+  }
+
+  .success-icon-wrap.safe      { background: var(--green-bg); }
+  .success-icon-wrap.help      { background: var(--orange-bg); }
+  .success-icon-wrap.emergency { background: var(--red-light); }
+
+  .success-screen h2 { font-size: 22px; font-weight: 800; margin-bottom: 10px; }
+  .success-screen p  { font-size: 14px; color: var(--mid); line-height: 1.6; }
+
+  .footer {
+    text-align: center;
+    padding: 16px;
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 600;
+  }
+
+  .footer strong { color: var(--mid); }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="card-header">
+    <div class="badge"><div class="badge-dot"></div> Protocolo Activo — Reporte Requerido</div>
+    <h1>Reporta tu <span>Estado</span><br>de Seguridad</h1>
+    <p>Completa este formulario para que tu equipo sepa que estás bien.</p>
+  </div>
+
+  <div class="card-body" id="form-section">
+
+    <!-- Email -->
+    <div class="form-group">
+      <label>Email Corporativo</label>
+      <input type="email" id="email" placeholder="Ej. maria.gonzalez@apollo.io" autocomplete="off">
+      <div class="lookup-status" id="lookup-status">
+        <span id="lookup-text"></span>
+      </div>
+    </div>
+
+    <!-- Auto-filled info card -->
+    <div class="autofill-fields" id="autofill-card">
+      <div class="autofill-fields-title">✅ Información encontrada automáticamente</div>
+      <div class="autofill-row"><span class="af-key">Nombre</span><span class="af-val" id="af-nombre">—</span></div>
+      <div class="autofill-row"><span class="af-key">Manager</span><span class="af-val" id="af-manager">—</span></div>
+      <div class="autofill-row"><span class="af-key">Departamento</span><span class="af-val" id="af-dept">—</span></div>
+      <div class="autofill-row"><span class="af-key">Teléfono</span><span class="af-val" id="af-phone">—</span></div>
+    </div>
+
+    <!-- Nombre (shown only if not found in DB) -->
+    <div class="form-group" id="nombre-group" style="display:none">
+      <label>Nombre Completo</label>
+      <input type="text" id="nombre" placeholder="Ej. María González">
+      <div class="error-msg" id="err-nombre">⚠️ Por favor ingresa tu nombre completo.</div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- Status -->
+    <div class="status-label">¿Cuál es tu estado ahora mismo?</div>
+    <input type="hidden" name="status" id="status-input">
+
+    <div class="status-grid">
+      <button type="button" class="status-btn" data-value="safe" onclick="selectStatus(this)">
+        <span class="icon">✅</span>
+        <span class="label">Estoy<br>A Salvo</span>
+      </button>
+      <button type="button" class="status-btn" data-value="help" onclick="selectStatus(this)">
+        <span class="icon">⚠️</span>
+        <span class="label">Necesito<br>Ayuda</span>
+      </button>
+      <button type="button" class="status-btn" data-value="emergency" onclick="selectStatus(this)">
+        <span class="icon">🆘</span>
+        <span class="label">Es una<br>Emergencia</span>
+      </button>
+    </div>
+    <div class="error-msg" id="err-status">⚠️ Por favor selecciona tu estado.</div>
+
+    <hr class="divider">
+
+    <!-- Notes -->
+    <div class="form-group">
+      <label>Notas Adicionales <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label>
+      <input type="text" id="notes" placeholder="Ej. Estoy en el estacionamiento norte...">
+    </div>
+
+    <div class="error-msg" id="err-email" style="margin-bottom:12px">⚠️ Por favor ingresa tu email corporativo.</div>
+    <div class="error-msg" id="err-notfound" style="margin-bottom:12px">⚠️ Email no encontrado. Verifica que sea tu correo Apollo.</div>
+
+    <button class="submit-btn" id="submit-btn" onclick="submitReport()">
+      <span>🚨</span> Enviar Reporte de Emergencia
+    </button>
+  </div>
+
+  <div class="success-screen" id="success-screen">
+    <div class="success-icon-wrap" id="success-icon-wrap">
+      <span id="success-icon">✅</span>
+    </div>
+    <h2 id="success-title">¡Reporte Enviado!</h2>
+    <p id="success-msg">Tu estado ha sido registrado. El equipo de seguridad ha sido notificado.</p>
+  </div>
+</div>
+
+<div class="footer">
+  <strong>Uso Interno Exclusivo</strong> &nbsp;·&nbsp; Sistema de Emergencias Corporativo
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getDatabase, ref, push, get, child } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAuFJobbtBEtYEPwLEUlCj_nHnAl2gYnW8",
+    authDomain: "apollo-emergency-response.firebaseapp.com",
+    databaseURL: "https://apollo-emergency-response-default-rtdb.firebaseio.com",
+    projectId: "apollo-emergency-response",
+    storageBucket: "apollo-emergency-response.firebasestorage.app",
+    messagingSenderId: "48858300068",
+    appId: "1:48858300068:web:596bb8a998501d5917b031"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getDatabase(app);
+
+  let empleadoData = null;
+  let lookupTimer  = null;
+
+  // Email lookup with debounce
+  document.getElementById('email').addEventListener('input', function() {
+    clearTimeout(lookupTimer);
+    const email = this.value.trim().toLowerCase();
+    if (!email || !email.includes('@')) {
+      resetAutofill();
+      return;
+    }
+    lookupTimer = setTimeout(() => lookupEmployee(email), 600);
+  });
+
+  async function lookupEmployee(email) {
+    showLookupStatus('loading', '🔍 Buscando información...');
+    try {
+      const snap = await get(child(ref(db), 'empleados'));
+      if (snap.exists()) {
+        let found = null;
+        snap.forEach(c => {
+          const d = c.val();
+          if (d.email && d.email.toLowerCase() === email) {
+            found = d;
+          }
+        });
+
+        if (found) {
+          empleadoData = found;
+          showAutofill(found);
+          showLookupStatus('found', '✅ Información cargada automáticamente');
+        } else {
+          empleadoData = null;
+          resetAutofill();
+          showLookupStatus('notfound', '❌ Email no encontrado en la base de datos');
+          document.getElementById('nombre-group').style.display = 'block';
+        }
+      }
+    } catch(e) {
+      showLookupStatus('notfound', '⚠️ Error al buscar. Verifica tu conexión.');
+    }
+  }
+
+  function showAutofill(data) {
+    document.getElementById('af-nombre').textContent  = data.nombre || '—';
+    document.getElementById('af-manager').textContent = data.manager || '—';
+    document.getElementById('af-dept').textContent    = data.departamento || '—';
+    document.getElementById('af-phone').textContent   = data.telefono || '—';
+    document.getElementById('autofill-card').classList.add('show');
+    document.getElementById('nombre-group').style.display = 'none';
+  }
+
+  function resetAutofill() {
+    empleadoData = null;
+    document.getElementById('autofill-card').classList.remove('show');
+    document.getElementById('lookup-status').className = 'lookup-status';
+  }
+
+  function showLookupStatus(type, msg) {
+    const el = document.getElementById('lookup-status');
+    el.className = `lookup-status ${type}`;
+    document.getElementById('lookup-text').textContent = msg;
+  }
+
+  window.selectStatus = function(btn) {
+    document.querySelectorAll('.status-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('status-input').value = btn.dataset.value;
+    document.getElementById('err-status').style.display = 'none';
+  };
+
+  window.submitReport = async function() {
+    const email  = document.getElementById('email').value.trim();
+    const status = document.getElementById('status-input').value;
+    const notes  = document.getElementById('notes').value.trim();
+
+    // Hide all errors
+    document.querySelectorAll('.error-msg').forEach(e => e.style.display = 'none');
+
+    let valid = true;
+    if (!email) { document.getElementById('err-email').style.display = 'block'; valid = false; }
+    if (!empleadoData && !document.getElementById('nombre').value.trim()) {
+      document.getElementById('err-nombre').style.display = 'block'; valid = false;
+    }
+    if (!empleadoData && email) {
+      document.getElementById('err-notfound').style.display = 'block'; valid = false;
+    }
+    if (!status) { document.getElementById('err-status').style.display = 'block'; valid = false; }
+    if (!valid) return;
+
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Enviando...';
+
+    try {
+      const payload = {
+        email,
+        nombre:       empleadoData?.nombre      || document.getElementById('nombre').value.trim(),
+        manager:      empleadoData?.manager      || '—',
+        departamento: empleadoData?.departamento || '—',
+        telefono:     empleadoData?.telefono     || '—',
+        status,
+        notes,
+        timestamp: Date.now(),
+        agente_brigada: ''
+      };
+
+      await push(ref(db, 'reportes'), payload);
+
+      const data = {
+        safe:      { icon: '✅', cls: 'safe',      title: '¡Reporte Enviado!',               msg: 'Tu estado fue registrado. El equipo de seguridad ha sido notificado.' },
+        help:      { icon: '⚠️', cls: 'help',      title: 'Reporte Enviado — Ayuda en Camino', msg: 'Tu solicitud fue recibida. Alguien del equipo se comunicará contigo pronto.' },
+        emergency: { icon: '🆘', cls: 'emergency', title: 'Protocolo de Auxilio Activado',    msg: 'Mantente en un lugar seguro y visible. El equipo está en camino.' }
+      };
+
+      const d = data[status];
+      document.getElementById('success-icon').textContent    = d.icon;
+      document.getElementById('success-icon-wrap').className = `success-icon-wrap ${d.cls}`;
+      document.getElementById('success-title').textContent   = d.title;
+      document.getElementById('success-msg').textContent     = d.msg;
+      document.getElementById('form-section').style.display  = 'none';
+      document.getElementById('success-screen').style.display = 'block';
+    } catch(err) {
+      console.error(err);
+      btn.disabled = false;
+      btn.innerHTML = '<span>🚨</span> Enviar Reporte de Emergencia';
+      alert('Error al enviar. Verifica tu conexión e intenta de nuevo.');
+    }
+  };
+</script>
+</body>
+</html>

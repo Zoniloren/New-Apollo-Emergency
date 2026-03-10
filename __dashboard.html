@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EmergencyBoard — Apollo</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --red:#D92B2B; --red-hover:#BE2020; --red-light:#FFF3F3; --red-mid:#FFD5D5;
+  --orange:#D97706; --orange-bg:#FFFBEB;
+  --green:#047857; --green-bg:#ECFDF5;
+  --blue:#1F3864; --blue-bg:#EFF6FF;
+  --bg:#F0F2F5; --white:#FFFFFF; --border:#E0E2EB;
+  --text:#0F0F1A; --mid:#4A4A6A; --muted:#9090B0;
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.06),0 4px 12px rgba(0,0,0,0.05);
+  --shadow-md:0 4px 8px rgba(0,0,0,0.04),0 16px 40px rgba(0,0,0,0.09);
+}
+
+body { font-family:'Plus Jakarta Sans',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+
+/* ── GATE ── */
+#gate-screen {
+  position:fixed; inset:0; background:linear-gradient(135deg,var(--blue),#2E4A8C);
+  display:flex; align-items:center; justify-content:center; z-index:1000;
+}
+.gate-card {
+  background:var(--white); border-radius:20px; padding:40px 36px;
+  width:100%; max-width:380px; text-align:center; box-shadow:var(--shadow-md);
+}
+.gate-logo { font-size:48px; margin-bottom:12px; }
+.gate-card h2 { font-size:22px; font-weight:800; color:var(--blue); margin-bottom:6px; }
+.gate-card p  { font-size:13px; color:var(--muted); margin-bottom:24px; }
+.gate-input-wrap { position:relative; margin-bottom:12px; }
+.gate-input-wrap input {
+  width:100%; padding:14px 48px 14px 16px;
+  border:1.5px solid var(--border); border-radius:10px;
+  font-family:inherit; font-size:14px; outline:none;
+  transition:border-color .2s;
+}
+.gate-input-wrap input:focus { border-color:var(--blue); }
+.gate-toggle {
+  position:absolute; right:14px; top:50%; transform:translateY(-50%);
+  background:none; border:none; cursor:pointer; font-size:16px; color:var(--muted);
+}
+.gate-btn {
+  width:100%; padding:14px; background:linear-gradient(135deg,var(--blue),#2E4A8C);
+  color:white; border:none; border-radius:10px;
+  font-family:inherit; font-size:14px; font-weight:700; cursor:pointer;
+  transition:opacity .2s;
+}
+.gate-btn:hover { opacity:.9; }
+.gate-error { color:var(--red); font-size:12px; font-weight:600; margin-top:8px; min-height:16px; }
+
+/* ── DASHBOARD ── */
+#dashboard-content { display:none; }
+
+.topbar {
+  background:var(--white); border-bottom:1px solid var(--border);
+  padding:14px 24px; display:flex; align-items:center; gap:16px;
+  position:sticky; top:0; z-index:100;
+}
+.logo { display:flex; align-items:center; gap:8px; font-size:18px; font-weight:800; color:var(--red); }
+.logo-sub { color:var(--blue); }
+.live-badge {
+  display:flex; align-items:center; gap:5px;
+  background:#ECFDF5; color:var(--green); font-size:11px; font-weight:700;
+  padding:4px 10px; border-radius:20px; border:1px solid #A7F3D0;
+}
+.live-dot { width:6px;height:6px;background:var(--green);border-radius:50%;animation:blink 1.4s infinite; }
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+.update-ts { margin-left:auto; font-size:12px; color:var(--muted); }
+.topbar-actions { display:flex; gap:8px; }
+.btn-sm {
+  padding:8px 14px; border:none; border-radius:8px;
+  font-family:inherit; font-size:12px; font-weight:700; cursor:pointer;
+  display:flex; align-items:center; gap:5px; transition:opacity .2s;
+}
+.btn-sm:hover { opacity:.85; }
+.btn-export  { background:var(--blue); color:white; }
+.btn-reset   { background:var(--red-light); color:var(--red); border:1px solid var(--red-mid); }
+.btn-logout  { background:var(--bg); color:var(--mid); border:1px solid var(--border); }
+
+.main { padding:24px; max-width:1400px; margin:0 auto; }
+
+/* Stats */
+.stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
+.stat-card  { background:var(--white); border-radius:14px; padding:20px; box-shadow:var(--shadow-sm); border-bottom:3px solid transparent; }
+.stat-card.safe      { border-color:var(--green); }
+.stat-card.help      { border-color:var(--orange); }
+.stat-card.emergency { border-color:var(--red); }
+.stat-card.total     { border-color:var(--blue); }
+.stat-icon { font-size:22px; margin-bottom:8px; }
+.stat-num  { font-size:36px; font-weight:800; line-height:1; }
+.stat-card.safe      .stat-num { color:var(--green); }
+.stat-card.help      .stat-num { color:var(--orange); }
+.stat-card.emergency .stat-num { color:var(--red); }
+.stat-card.total     .stat-num { color:var(--blue); }
+.stat-label{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); margin-top:4px; }
+
+/* Dept */
+.dept-section { background:var(--white); border-radius:14px; padding:20px; box-shadow:var(--shadow-sm); margin-bottom:24px; }
+.section-title { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--mid); margin-bottom:14px; }
+.dept-grid { display:flex; gap:12px; flex-wrap:wrap; }
+.dept-tile { background:var(--bg); border-radius:10px; padding:14px 18px; min-width:120px; text-align:center; }
+.dept-tile-name { font-size:13px; font-weight:700; color:var(--text); margin-bottom:8px; }
+.dept-counts { display:flex; gap:10px; justify-content:center; }
+.dept-count { text-align:center; }
+.dept-count-num { font-size:18px; font-weight:800; }
+.dept-count-num.g { color:var(--green); }
+.dept-count-num.o { color:var(--orange); }
+.dept-count-num.r { color:var(--red); }
+.dept-count-icon { font-size:12px; }
+
+/* Table section */
+.table-section { background:var(--white); border-radius:14px; box-shadow:var(--shadow-sm); overflow:hidden; }
+.table-controls {
+  padding:16px 20px; border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+}
+.filter-btn {
+  padding:7px 14px; border:1.5px solid var(--border); border-radius:8px;
+  font-family:inherit; font-size:12px; font-weight:700; cursor:pointer; background:var(--white);
+  transition:all .15s;
+}
+.filter-btn.active, .filter-btn:hover { background:var(--blue); color:white; border-color:var(--blue); }
+.search-box {
+  margin-left:auto; display:flex; align-items:center; gap:6px;
+  border:1.5px solid var(--border); border-radius:8px; padding:7px 12px;
+  background:var(--bg);
+}
+.search-box input {
+  border:none; background:none; font-family:inherit; font-size:13px;
+  outline:none; width:180px; color:var(--text);
+}
+.report-count { padding:12px 20px; font-size:12px; font-weight:700; color:var(--muted); border-bottom:1px solid var(--border); }
+
+/* Table */
+.table-wrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+th {
+  background:var(--bg); padding:11px 14px; text-align:left;
+  font-size:10px; font-weight:700; text-transform:uppercase;
+  letter-spacing:.5px; color:var(--muted); border-bottom:1px solid var(--border);
+  white-space:nowrap;
+}
+td { padding:12px 14px; border-bottom:1px solid var(--border); vertical-align:middle; }
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:#FAFAFA; }
+
+.row-num { font-size:11px; font-weight:700; color:var(--muted); }
+.dept-chip { background:var(--blue-bg); color:var(--blue); font-size:11px; font-weight:700; padding:3px 8px; border-radius:6px; }
+.time-cell { font-size:12px; color:var(--muted); font-weight:600; }
+.note-cell { font-size:12px; color:var(--mid); max-width:160px; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+.status-pill {
+  display:inline-flex; align-items:center; gap:4px;
+  padding:4px 10px; border-radius:20px; font-size:11px; font-weight:700;
+}
+.status-pill.safe      { background:var(--green-bg); color:var(--green); }
+.status-pill.help      { background:var(--orange-bg); color:var(--orange); }
+.status-pill.emergency { background:var(--red-light); color:var(--red); }
+
+/* Brigade agent cell */
+.brigade-cell {
+  display:flex; align-items:center; gap:6px; min-width:160px;
+}
+.brigade-name {
+  font-size:12px; font-weight:700; color:var(--blue);
+  cursor:pointer; padding:4px 8px; border-radius:6px;
+  border:1.5px dashed var(--border); background:var(--bg);
+  flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  transition:border-color .2s;
+}
+.brigade-name:hover { border-color:var(--blue); background:var(--blue-bg); }
+.brigade-name.empty { color:var(--muted); font-weight:500; }
+.brigade-input {
+  font-size:12px; font-weight:700; color:var(--blue);
+  padding:4px 8px; border-radius:6px;
+  border:1.5px solid var(--blue); background:var(--blue-bg);
+  flex:1; font-family:inherit; outline:none;
+  display:none;
+}
+.brigade-save {
+  padding:4px 8px; background:var(--blue); color:white;
+  border:none; border-radius:6px; font-size:11px; font-weight:700;
+  cursor:pointer; display:none; white-space:nowrap;
+}
+
+/* Empty state */
+#empty-state { text-align:center; padding:60px 20px; }
+#empty-state .empty-icon { font-size:48px; margin-bottom:12px; }
+#empty-state p { color:var(--muted); font-size:14px; }
+
+/* Modal */
+.overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:200; align-items:center; justify-content:center; }
+.overlay.open { display:flex; }
+.modal { background:var(--white); border-radius:16px; padding:32px; max-width:380px; width:90%; text-align:center; }
+.modal h3 { font-size:20px; font-weight:800; margin-bottom:10px; }
+.modal p  { font-size:14px; color:var(--mid); margin-bottom:24px; }
+.modal-btns { display:flex; gap:10px; }
+.modal-btns button { flex:1; padding:12px; border:none; border-radius:10px; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer; }
+.btn-cancel  { background:var(--bg); color:var(--mid); }
+.btn-confirm { background:var(--red); color:white; }
+
+@media(max-width:768px){
+  .stats-grid { grid-template-columns:repeat(2,1fr); }
+  .topbar-actions .btn-sm span { display:none; }
+}
+</style>
+</head>
+<body>
+
+<!-- GATE -->
+<div id="gate-screen">
+  <div class="gate-card">
+    <div class="gate-logo">🛡️</div>
+    <h2>EmergencyBoard</h2>
+    <p>Acceso restringido — Solo personal autorizado</p>
+    <div class="gate-input-wrap">
+      <input type="password" id="gate-input" placeholder="Contraseña de acceso" onkeydown="if(event.key==='Enter')checkGate()">
+      <button class="gate-toggle" onclick="togglePwd()">👁</button>
+    </div>
+    <button class="gate-btn" onclick="checkGate()">Ingresar al Dashboard</button>
+    <div class="gate-error" id="gate-error"></div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard-content">
+  <div class="topbar">
+    <div class="logo">Emergency<span class="logo-sub">Board</span></div>
+    <div class="live-badge"><div class="live-dot"></div> EN VIVO</div>
+    <span class="update-ts">Actualizado: <span id="update-ts">—</span></span>
+    <div class="topbar-actions">
+      <button class="btn-sm btn-export" onclick="exportCSV()">⬇️ <span>Exportar CSV</span></button>
+      <button class="btn-sm btn-reset"  onclick="openModal()">🔄 <span>Reiniciar</span></button>
+      <button class="btn-sm btn-logout" onclick="logout()">🔒 <span>Salir</span></button>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card safe">
+        <div class="stat-icon">✅</div>
+        <div class="stat-num" id="cnt-safe">0</div>
+        <div class="stat-label">A Salvo</div>
+      </div>
+      <div class="stat-card help">
+        <div class="stat-icon">⚠️</div>
+        <div class="stat-num" id="cnt-help">0</div>
+        <div class="stat-label">Necesitan Ayuda</div>
+      </div>
+      <div class="stat-card emergency">
+        <div class="stat-icon">🆘</div>
+        <div class="stat-num" id="cnt-emergency">0</div>
+        <div class="stat-label">Emergencia</div>
+      </div>
+      <div class="stat-card total">
+        <div class="stat-icon">👥</div>
+        <div class="stat-num" id="cnt-total">0</div>
+        <div class="stat-label">Total Reportados</div>
+      </div>
+    </div>
+
+    <!-- Dept -->
+    <div class="dept-section">
+      <div class="section-title">Resumen por Departamento</div>
+      <div class="dept-grid" id="dept-grid"></div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-section">
+      <div class="table-controls">
+        <button class="filter-btn active" onclick="setFilter('all',this)">Todos</button>
+        <button class="filter-btn" onclick="setFilter('safe',this)">✅ A Salvo</button>
+        <button class="filter-btn" onclick="setFilter('help',this)">⚠️ Necesitan Ayuda</button>
+        <button class="filter-btn" onclick="setFilter('emergency',this)">🆘 Emergencia</button>
+        <div class="search-box">
+          🔍 <input type="text" id="search" placeholder="Buscar por nombre..." oninput="renderTable()">
+        </div>
+      </div>
+      <div class="report-count" id="report-count">0 reportes</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Nombre</th>
+              <th>Email</th>
+              <th>Manager</th>
+              <th>Dpto</th>
+              <th>Ubicación / Notas</th>
+              <th>Teléfono</th>
+              <th>Estado</th>
+              <th>🧡 Agente Brigada</th>
+              <th>Hora</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+        <div id="empty-state">
+          <div class="empty-icon">📋</div>
+          <p>Esperando reportes de empleados...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Reset Modal -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h3>⚠️ Reiniciar Dashboard</h3>
+    <p>Se eliminarán todos los reportes actuales. Esta acción no se puede deshacer.</p>
+    <div class="modal-btns">
+      <button class="btn-cancel"  onclick="closeModal()">Cancelar</button>
+      <button class="btn-confirm" onclick="resetAll()">Sí, Reiniciar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Gate Script -->
+<script>
+  const SESSION_KEY = 'apollo_auth_v2';
+  const PASSWORD    = 'Brigada2026';
+
+  function checkSession() {
+    if (sessionStorage.getItem(SESSION_KEY) === '1') showDashboard();
+  }
+
+  function checkGate() {
+    const val = document.getElementById('gate-input').value;
+    if (val === PASSWORD) {
+      sessionStorage.setItem(SESSION_KEY, '1');
+      document.getElementById('gate-screen').style.display = 'none';
+      showDashboard();
+    } else {
+      document.getElementById('gate-error').textContent = '❌ Contraseña incorrecta.';
+    }
+  }
+
+  function showDashboard() {
+    document.getElementById('gate-screen').style.display   = 'none';
+    document.getElementById('dashboard-content').style.display = 'block';
+  }
+
+  function togglePwd() {
+    const input = document.getElementById('gate-input');
+    input.type = input.type === 'password' ? 'text' : 'password';
+  }
+
+  window.logout = function() {
+    sessionStorage.removeItem(SESSION_KEY);
+    document.getElementById('dashboard-content').style.display = 'none';
+    document.getElementById('gate-screen').style.display = 'flex';
+    document.getElementById('gate-input').value = '';
+    document.getElementById('gate-error').textContent = '';
+  };
+
+  checkSession();
+</script>
+
+<!-- Firebase Script -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getDatabase, ref, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAuFJobbtBEtYEPwLEUlCj_nHnAl2gYnW8",
+    authDomain: "apollo-emergency-response.firebaseapp.com",
+    databaseURL: "https://apollo-emergency-response-default-rtdb.firebaseio.com",
+    projectId: "apollo-emergency-response",
+    storageBucket: "apollo-emergency-response.firebasestorage.app",
+    messagingSenderId: "48858300068",
+    appId: "1:48858300068:web:596bb8a998501d5917b031"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getDatabase(app);
+
+  const DEPTS = ['HVO','Support','CA','Sales','HR'];
+  let allReports  = [];
+  let activeFilter = 'all';
+
+  onValue(ref(db, 'reportes'), snap => {
+    allReports = [];
+    if (snap.exists()) {
+      snap.forEach(c => { allReports.push({ id: c.key, ...c.val() }); });
+      allReports.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    }
+    refreshDashboard();
+    document.getElementById('update-ts').textContent =
+      new Date().toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  });
+
+  function refreshDashboard() {
+    const safe      = allReports.filter(r => r.status === 'safe').length;
+    const help      = allReports.filter(r => r.status === 'help').length;
+    const emergency = allReports.filter(r => r.status === 'emergency').length;
+
+    document.getElementById('cnt-safe').textContent      = safe;
+    document.getElementById('cnt-help').textContent      = help;
+    document.getElementById('cnt-emergency').textContent = emergency;
+    document.getElementById('cnt-total').textContent     = allReports.length;
+
+    document.getElementById('dept-grid').innerHTML = DEPTS.map(d => {
+      const dr = allReports.filter(r => r.departamento === d);
+      const ds = dr.filter(r => r.status === 'safe').length;
+      const dh = dr.filter(r => r.status === 'help').length;
+      const de = dr.filter(r => r.status === 'emergency').length;
+      return `<div class="dept-tile">
+        <div class="dept-tile-name">${d}</div>
+        <div class="dept-counts">
+          <div class="dept-count"><div class="dept-count-num g">${ds}</div><div class="dept-count-icon">✅</div></div>
+          <div class="dept-count"><div class="dept-count-num o">${dh}</div><div class="dept-count-icon">⚠️</div></div>
+          <div class="dept-count"><div class="dept-count-num r">${de}</div><div class="dept-count-icon">🆘</div></div>
+        </div>
+      </div>`;
+    }).join('');
+
+    renderTable();
+  }
+
+  window.renderTable = function() {
+    const q = document.getElementById('search').value.toLowerCase();
+    const filtered = allReports.filter(r =>
+      (activeFilter === 'all' || r.status === activeFilter) &&
+      (!q || r.nombre?.toLowerCase().includes(q))
+    );
+
+    const tbody = document.getElementById('tbody');
+    const empty = document.getElementById('empty-state');
+    const count = document.getElementById('report-count');
+    count.textContent = `${filtered.length} reporte${filtered.length !== 1 ? 's' : ''}`;
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+
+    empty.style.display = 'none';
+    const info = {
+      safe:      { label:'A Salvo',        icon:'✅' },
+      help:      { label:'Necesita Ayuda', icon:'⚠️' },
+      emergency: { label:'Emergencia',     icon:'🆘' }
+    };
+
+    tbody.innerHTML = filtered.map((r, i) => {
+      const s  = info[r.status] || { label: r.status, icon:'❓' };
+      const ts = r.timestamp
+        ? new Date(r.timestamp).toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit', second:'2-digit' })
+        : '—';
+      const brigade = r.agente_brigada || '';
+      const brigadeDisplay = brigade
+        ? `<span class="brigade-name" onclick="editBrigade(this,'${r.id}')" title="Click para reasignar">${brigade}</span>`
+        : `<span class="brigade-name empty" onclick="editBrigade(this,'${r.id}')" title="Asignar agente">+ Asignar</span>`;
+
+      return `<tr>
+        <td><span class="row-num">${i+1}</span></td>
+        <td><strong>${r.nombre || '—'}</strong></td>
+        <td><span class="note-cell">${r.email || '—'}</span></td>
+        <td>${r.manager || '—'}</td>
+        <td><span class="dept-chip">${r.departamento || '—'}</span></td>
+        <td><span class="note-cell">${r.notes || '—'}</span></td>
+        <td><span class="time-cell">${r.telefono || '—'}</span></td>
+        <td><span class="status-pill ${r.status}">${s.icon} ${s.label}</span></td>
+        <td>
+          <div class="brigade-cell" id="brigade-cell-${r.id}">
+            ${brigadeDisplay}
+            <input class="brigade-input" id="brigade-input-${r.id}" placeholder="Nombre agente..." value="${brigade}">
+            <button class="brigade-save" id="brigade-save-${r.id}" onclick="saveBrigade('${r.id}')">✓ Guardar</button>
+          </div>
+        </td>
+        <td><span class="time-cell">${ts}</span></td>
+      </tr>`;
+    }).join('');
+  };
+
+  // Brigade edit/save
+  window.editBrigade = function(el, reportId) {
+    const input = document.getElementById(`brigade-input-${reportId}`);
+    const saveBtn = document.getElementById(`brigade-save-${reportId}`);
+    el.style.display = 'none';
+    input.style.display = 'block';
+    saveBtn.style.display = 'block';
+    input.focus();
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') saveBrigade(reportId);
+      if (e.key === 'Escape') renderTable();
+    });
+  };
+
+  window.saveBrigade = async function(reportId) {
+    const input = document.getElementById(`brigade-input-${reportId}`);
+    const value = input.value.trim();
+    try {
+      await update(ref(db, `reportes/${reportId}`), { agente_brigada: value });
+    } catch(e) {
+      alert('Error al guardar. Intenta de nuevo.');
+    }
+  };
+
+  window.setFilter = function(f, btn) {
+    activeFilter = f;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderTable();
+  };
+
+  window.exportCSV = function() {
+    if (!allReports.length) { alert('No hay datos para exportar.'); return; }
+    const rows = [
+      ['Nombre','Email','Manager','Departamento','Teléfono','Estado','Notas','Agente Brigada','Hora'],
+      ...allReports.map(r => [
+        r.nombre || '', r.email || '', r.manager || '', r.departamento || '',
+        r.telefono || '', r.status || '',
+        (r.notes || '').replace(/,/g,';'),
+        r.agente_brigada || '',
+        r.timestamp ? new Date(r.timestamp).toLocaleString('es-MX') : ''
+      ])
+    ].map(r => r.join(',')).join('\n');
+
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([rows], { type:'text/csv;charset=utf-8;' }));
+    a.download = `emergencia_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+  };
+
+  window.openModal  = () => document.getElementById('overlay').classList.add('open');
+  window.closeModal = () => document.getElementById('overlay').classList.remove('open');
+
+  window.resetAll = async function() {
+    await remove(ref(db, 'reportes'));
+    closeModal();
+  };
+</script>
+</body>
+</html>
